@@ -1,119 +1,107 @@
 import json
 import time
+from typing import TypeVar
 
 from google import genai
 from google.genai import errors as google_errors
+from pydantic import BaseModel
 
-from backend.exceptions import GeminiRateLimitError, InvalidPresentationError
-from backend.models import Presentation
+from backend.exceptions import LLMGenerationError, LLMRateLimitError, LLMValidationError
+from backend.llm_client import LLMClient
 from config.settings import GEMINI_MODEL, GOOGLE_API_KEY
 
+T = TypeVar("T", bound=BaseModel)
 
-class GeminiClient:
+
+class GeminiClient(LLMClient):
+    """Google Gemini implementation of the LLMClient contract.
+
+    Every Gemini-specific quirk (schema field stripping, rate-limit
+    detection, retry/backoff) lives in this one file. Agents never see
+    any of it.
+    """
 
     def __init__(self):
+        self._client = genai.Client(api_key=GOOGLE_API_KEY)
 
-        self.client = genai.Client(
-            api_key=GOOGLE_API_KEY
-        )
+    def generate_text(self, prompt: str, *, model: str | None = None) -> str:
+        response = self._call(prompt, model=model, config=None)
+        return response.text or ""
 
-    def build_response_schema(self, response_schema):
-        schema = response_schema.model_json_schema()
-        return self._strip_unsupported_schema_fields(schema)
+    def generate_structured(self, prompt: str, schema: type[T], *, model: str | None = None) -> T:
+        config = {
+            "response_mime_type": "application/json",
+            "response_schema": self._to_gemini_schema(schema),
+        }
+        response = self._call(prompt, model=model, config=config)
+        return self._parse(response, schema)
 
-    def _strip_unsupported_schema_fields(self, schema):
-        if isinstance(schema, dict):
-            cleaned = {}
-            for key, value in schema.items():
-                if key == "additionalProperties":
-                    continue
-                if isinstance(value, list):
-                    cleaned[key] = [self._strip_unsupported_schema_fields(item) for item in value]
-                elif isinstance(value, dict):
-                    cleaned[key] = self._strip_unsupported_schema_fields(value)
-                else:
-                    cleaned[key] = value
-            return cleaned
-        if isinstance(schema, list):
-            return [self._strip_unsupported_schema_fields(item) for item in schema]
-        return schema
+    # ---- internals ---------------------------------------------------
 
-    def _is_rate_limit_error(self, exc: Exception) -> bool:
-        if isinstance(exc, google_errors.ClientError):
-            status_code = getattr(exc, "code", None)
-            message = str(exc).lower()
-            return status_code == 429 or "resource_exhausted" in message or "quota" in message
-        return False
-
-    def generate(
-        self,
-        prompt: str,
-        model: str | None = None,
-        response_schema=None,
-        retries: int = 3,
-        delay_seconds: float = 2.0,
-    ):
-
-        config = None
-        if response_schema is not None:
-            config = {
-                "response_mime_type": "application/json",
-                "response_schema": self.build_response_schema(response_schema),
-            }
-
+    def _call(self, prompt: str, *, model, config, retries: int = 3, delay_seconds: float = 2.0):
         selected_model = model or GEMINI_MODEL
+        last_error: Exception | None = None
 
-        last_error = None
-        response = None
         for attempt in range(retries):
             try:
-                response = self.client.models.generate_content(
+                return self._client.models.generate_content(
                     model=selected_model,
                     contents=prompt,
                     config=config,
                 )
-                break
             except Exception as exc:
                 last_error = exc
-                if self._is_rate_limit_error(exc) and attempt < retries - 1:
+                if self._is_rate_limit(exc) and attempt < retries - 1:
                     time.sleep(delay_seconds * (attempt + 1))
                     continue
-                raise
+                break
 
-        if response is None:
-            if self._is_rate_limit_error(last_error):
-                raise GeminiRateLimitError(
-                    "Gemini API is temporarily rate-limited. Please retry shortly."
-                ) from last_error
-            raise InvalidPresentationError(f"Gemini generation failed: {last_error}") from last_error
+        if self._is_rate_limit(last_error):
+            raise LLMRateLimitError("Gemini is temporarily rate-limited. Please retry shortly.") from last_error
+        raise LLMGenerationError(f"Gemini generation failed: {last_error}") from last_error
 
-        if response_schema is None:
-            return response.text
-
-        if getattr(response, "parsed", None) is not None:
-            parsed = response.parsed
-            if isinstance(parsed, response_schema):
-                return parsed
-            if isinstance(parsed, dict):
-                try:
-                    return response_schema.model_validate(parsed)
-                except Exception as exc:
-                    raise InvalidPresentationError(
-                        "Gemini response did not match the presentation schema"
-                    ) from exc
+    def _parse(self, response, schema: type[T]) -> T:
+        parsed = getattr(response, "parsed", None)
+        if isinstance(parsed, schema):
+            return parsed
+        if isinstance(parsed, dict):
+            return self._validate(parsed, schema)
 
         text = getattr(response, "text", None)
         if not text:
-            raise InvalidPresentationError("Gemini returned no content for the requested schema")
+            raise LLMValidationError("Gemini returned no content for the requested schema")
 
         try:
             data = json.loads(text)
         except json.JSONDecodeError as exc:
-            raise InvalidPresentationError("Gemini returned invalid JSON") from exc
+            raise LLMValidationError("Gemini returned invalid JSON") from exc
 
+        return self._validate(data, schema)
+
+    def _validate(self, data: dict, schema: type[T]) -> T:
         try:
-            return response_schema.model_validate(data)
+            return schema.model_validate(data)
         except Exception as exc:
-            raise InvalidPresentationError(
-                "Gemini response did not match the presentation schema"
+            raise LLMValidationError(
+                f"Gemini response did not match the {schema.__name__} schema"
             ) from exc
+
+    def _to_gemini_schema(self, schema: type[BaseModel]) -> dict:
+        return self._strip_unsupported_fields(schema.model_json_schema())
+
+    def _strip_unsupported_fields(self, node):
+        if isinstance(node, dict):
+            return {
+                key: self._strip_unsupported_fields(value)
+                for key, value in node.items()
+                if key != "additionalProperties"
+            }
+        if isinstance(node, list):
+            return [self._strip_unsupported_fields(item) for item in node]
+        return node
+
+    def _is_rate_limit(self, exc: Exception | None) -> bool:
+        if isinstance(exc, google_errors.ClientError):
+            message = str(exc).lower()
+            return getattr(exc, "code", None) == 429 or "resource_exhausted" in message or "quota" in message
+        return False
