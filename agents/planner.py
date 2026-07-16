@@ -1,46 +1,21 @@
-import json
-
 from agents.base import BaseAgent
-from backend.exceptions import InvalidPresentationError
-from backend.models import Presentation
-from backend.prompt_loader import load_prompt
+from backend.models import Presentation, ReviewResult
 
 
 class PlannerAgent(BaseAgent):
+    """Turns a topic (optionally plus reviewer feedback) into a Presentation."""
 
-    def __init__(self):
+    prompt_name = "planner"
 
-        super().__init__()
+    def run(self, topic: str, feedback: ReviewResult | None = None) -> Presentation:
+        prompt = f"{self.system_prompt}\n\nTopic:\n{topic}"
 
-        self.system_prompt = load_prompt("planner")
+        if feedback is not None:
+            prompt += (
+                "\n\nYour previous draft was rejected by the reviewer. "
+                "Fix every issue below and return a new, complete presentation "
+                "(do not just patch — regenerate the full JSON):\n"
+                f"{feedback.model_dump_json(indent=2)}"
+            )
 
-    def run(self, topic: str) -> Presentation:
-
-        prompt = f"""
-{self.system_prompt}
-
-Topic:
-
-{topic}
-"""
-
-        presentation = self.client.generate(
-            prompt,
-            response_schema=Presentation,
-        )
-
-        if isinstance(presentation, Presentation):
-            return presentation
-
-        if isinstance(presentation, dict):
-            return Presentation.model_validate(presentation)
-
-        if isinstance(presentation, str):
-            try:
-                payload = json.loads(presentation)
-            except json.JSONDecodeError as exc:
-                raise InvalidPresentationError("Planner returned invalid JSON") from exc
-
-            return Presentation.model_validate(payload)
-
-        raise InvalidPresentationError("Planner returned an unexpected payload")
+        return self.client.generate_structured(prompt, Presentation)
