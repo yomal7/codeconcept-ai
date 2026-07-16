@@ -21,3 +21,5 @@ FPS = int(os.getenv("FPS", 30))
 
 THEME = os.getenv("THEME", "codeconcept")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+MAX_PLANNER_ATTEMPTS = int(os.getenv("MAX_PLANNER_ATTEMPTS", 3))
