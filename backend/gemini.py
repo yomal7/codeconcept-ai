@@ -23,10 +23,16 @@ class GeminiClient(LLMClient):
 
     def __init__(self):
         self._client = genai.Client(api_key=GOOGLE_API_KEY)
+        self.client = self._client
 
     def generate_text(self, prompt: str, *, model: str | None = None) -> str:
         response = self._call(prompt, model=model, config=None)
         return response.text or ""
+
+    def generate(self, prompt: str, *, model: str | None = None, response_schema=None, retries: int = 3, delay_seconds: float = 2.0):
+        if response_schema is None:
+            return self.generate_text(prompt, model=model)
+        return self.generate_structured(prompt, response_schema, model=model)
 
     def generate_structured(self, prompt: str, schema: type[T], *, model: str | None = None) -> T:
         config = {
@@ -42,9 +48,13 @@ class GeminiClient(LLMClient):
         selected_model = model or GEMINI_MODEL
         last_error: Exception | None = None
 
+        client = getattr(self, "_client", None) or getattr(self, "client", None)
+        if client is None:
+            raise LLMGenerationError("Gemini client is not initialized")
+
         for attempt in range(retries):
             try:
-                return self._client.models.generate_content(
+                return client.models.generate_content(
                     model=selected_model,
                     contents=prompt,
                     config=config,
@@ -86,16 +96,20 @@ class GeminiClient(LLMClient):
                 f"Gemini response did not match the {schema.__name__} schema"
             ) from exc
 
-    def _to_gemini_schema(self, schema: type[BaseModel]) -> dict:
+    def build_response_schema(self, schema: type[BaseModel]) -> dict:
         return self._strip_unsupported_fields(schema.model_json_schema())
+
+    def _to_gemini_schema(self, schema: type[BaseModel]) -> dict:
+        return self.build_response_schema(schema)
 
     def _strip_unsupported_fields(self, node):
         if isinstance(node, dict):
-            return {
-                key: self._strip_unsupported_fields(value)
-                for key, value in node.items()
-                if key != "additionalProperties"
-            }
+            cleaned = {}
+            for key, value in node.items():
+                if key in {"additionalProperties", "exclusiveMinimum", "exclusiveMaximum"}:
+                    continue
+                cleaned[key] = self._strip_unsupported_fields(value)
+            return cleaned
         if isinstance(node, list):
             return [self._strip_unsupported_fields(item) for item in node]
         return node
