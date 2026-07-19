@@ -1,6 +1,5 @@
 class LLMError(Exception):
-    """Base class for all LLM-related failures. Catch this if you just
-    want to know "something went wrong talking to the model"."""
+    """Base class for all LLM-related failures."""
 
 
 class LLMRateLimitError(LLMError):
@@ -13,3 +12,8 @@ class LLMGenerationError(LLMError):
 
 class LLMValidationError(LLMError):
     """The provider responded, but the output didn't match the requested schema."""
+
+
+class RenderError(Exception):
+    """Raised when the HTML -> PNG -> MP4 rendering pipeline fails
+    (Puppeteer, ffmpeg, or any other subprocess step)."""
