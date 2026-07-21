@@ -1,0 +1,237 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.slide {
+    position: relative;
+    overflow: hidden;
+    font-family: var(--font-family);
+    background: radial-gradient(circle at 15% -10%, var(--color-bg-alt), var(--color-bg) 55%);
+    color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+}
+
+.slide__bg {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at 85% 110%,
+            color-mix(in srgb, var(--color-accent) 18%, transparent),
+            transparent 60%);
+    pointer-events: none;
+}
+
+.slide__brand {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+}
+
+.slide__brand-mark {
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: var(--fs-caption);
+    color: var(--color-text-muted);
+}
+
+.slide__progress {
+    display: flex;
+    gap: 10px;
+}
+
+.slide__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-border);
+}
+
+.slide__dot.is-active {
+    background: var(--color-accent);
+}
+
+.slide__content {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+}
+
+.layout {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.layout--title,
+.layout--ending {
+    align-items: center;
+    text-align: center;
+    gap: var(--space-2);
+}
+
+.layout--diagram {
+    align-items: center;
+    text-align: center;
+}
+
+.title {
+    font-size: var(--fs-title);
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.title--hero {
+    font-size: var(--fs-hero);
+}
+
+.subtitle {
+    font-size: var(--fs-subtitle);
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.bullets {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.bullets li {
+    position: relative;
+    padding-left: 40px;
+    font-size: var(--fs-body);
+    color: var(--color-text);
+    text-align: left;
+}
+
+.bullets li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.5em;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-accent);
+}
+
+.bullets--hook {
+    align-items: flex-start;
+}
+
+.bullets--compact li {
+    font-size: var(--fs-caption);
+}
+
+.diagram {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.diagram svg {
+    width: 100%;
+    height: auto;
+    max-height: 560px;
+}
+
+.slide__watermark {
+    margin-top: var(--space-3);
+    font-size: var(--fs-caption);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+/* SVG diagrams produced by renderer/svg_diagram.py */
+.dg-node rect {
+    fill: var(--color-surface);
+    stroke: var(--color-border);
+    stroke-width: 2;
+}
+
+.dg-node text {
+    fill: var(--color-text);
+    font-family: var(--font-family);
+}
+
+.dg-node--accent rect {
+    stroke: var(--color-accent);
+    stroke-width: 3;
+}
+
+.dg-icon {
+    fill: none;
+    stroke: var(--color-accent);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.dg-icon rect,
+.dg-icon path,
+.dg-icon circle,
+.dg-icon ellipse {
+    fill: none;
+}
+
+.dg-icon-dot {
+    fill: var(--color-accent);
+    stroke: none;
+}
+
+.dg-icon-stroke-only {
+    fill: none;
+    stroke: var(--color-accent-2);
+}
+
+.dg-icon-fallback {
+    fill: var(--color-border);
+}
+
+.dg-edge path {
+    stroke: var(--color-accent);
+    stroke-width: 3;
+    fill: none;
+}
+
+.dg-edge text {
+    fill: var(--color-text-muted);
+    font-family: var(--font-family);
+}
+
+.dg-edge-label-bg {
+    fill: var(--color-bg);
+    stroke: var(--color-border);
+    stroke-width: 1;
+}
+
+.dg-arrowhead {
+    fill: var(--color-accent);
+}
+
+.dg-vs-badge circle {
+    fill: var(--color-accent);
+    stroke: none;
+}
+
+.dg-vs-badge text {
+    fill: var(--color-bg);
+    font-weight: 800;
+    font-family: var(--font-family);
+}
+
+.dg-caption {
+    fill: var(--color-text-muted);
+    font-family: var(--font-family);
+}

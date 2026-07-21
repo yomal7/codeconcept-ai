@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="layout layout--title">
+    <h1 class="title title--hero">{{ slide.title }}</h1>
+    {% if slide.subtitle %}<p class="subtitle">{{ slide.subtitle }}</p>{% endif %}
+    {% if slide.bullets %}
+    <ul class="bullets bullets--hook">
+        {% for bullet in slide.bullets %}<li>{{ bullet }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endblock %}

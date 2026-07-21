@@ -1,0 +1,33 @@
+/* Design tokens. Themes override these variables; nothing in base.css or
+   the layout templates ever hardcodes a color, font, or spacing value --
+   they all read from here, so a new theme is *only* a new file in
+   templates/styles/themes/, never a template change. */
+:root {
+    --color-bg: #0b1220;
+    --color-bg-alt: #101b30;
+    --color-surface: #16223b;
+    --color-text: #f4f7ff;
+    --color-text-muted: #9aa8c7;
+    --color-accent: #4f8cff;
+    --color-accent-2: #7be0d6;
+    --color-border: rgba(255, 255, 255, 0.1);
+
+    --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+    --space-1: 12px;
+    --space-2: 24px;
+    --space-3: 40px;
+    --space-4: 64px;
+    --space-5: 96px;
+
+    --radius-sm: 10px;
+    --radius-md: 20px;
+    --radius-lg: 32px;
+
+    --fs-hero: 72px;
+    --fs-title: 52px;
+    --fs-subtitle: 30px;
+    --fs-body: 26px;
+    --fs-caption: 20px;
+}

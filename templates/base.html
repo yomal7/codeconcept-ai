@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>{{ slide.title }}</title>
+    <style>
+        {
+                {
+                theme_css
+            }
+        }
+    </style>
+</head>
+
+<body class="slide slide--{{ slide.type.value }}" style="width:{{ width }}px; height:{{ height }}px;">
+    <div class="slide__bg"></div>
+    <header class="slide__brand">
+        <span class="slide__brand-mark">{{ brand_name }}</span>
+        <div class="slide__progress">
+            {% for i in range(total_slides) %}
+            <span class="slide__dot{{ ' is-active' if i == index else '' }}"></span>
+            {% endfor %}
+        </div>
+    </header>
+    <main class="slide__content">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+
+</html>

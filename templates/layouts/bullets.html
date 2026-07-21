@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="layout layout--bullets">
+    <h2 class="title">{{ slide.title }}</h2>
+    {% if slide.subtitle %}<p class="subtitle">{{ slide.subtitle }}</p>{% endif %}
+    <ul class="bullets">
+        {% for bullet in slide.bullets %}<li>{{ bullet }}</li>{% endfor %}
+    </ul>
+</div>
+{% endblock %}

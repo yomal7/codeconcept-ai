@@ -1,0 +1,11 @@
+/* Theme: codeconcept (default). Dark, blue-accented */
+:root {
+    --color-bg: #0b1220;
+    --color-bg-alt: #101b30;
+    --color-surface: #16223b;
+    --color-text: #f4f7ff;
+    --color-text-muted: #9aa8c7;
+    --color-accent: #4f8cff;
+    --color-accent-2: #7be0d6;
+    --color-border: rgba(255, 255, 255, 0.1);
+}

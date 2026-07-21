@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="layout layout--diagram">
+    <h2 class="title">{{ slide.title }}</h2>
+    {% if slide.subtitle %}<p class="subtitle">{{ slide.subtitle }}</p>{% endif %}
+    <div class="diagram">{{ diagram_svg|safe }}</div>
+    {% if slide.bullets %}
+    <ul class="bullets bullets--compact">
+        {% for bullet in slide.bullets %}<li>{{ bullet }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endblock %}
