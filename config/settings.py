@@ -31,6 +31,4 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 MAX_PLANNER_ATTEMPTS = int(os.getenv("MAX_PLANNER_ATTEMPTS", 3))
 
-PUPPETEER_SCRIPT = BASE_DIR / "renderer" / "screenshot.js"
 FFMPEG_BIN = os.getenv("FFMPEG_BIN", "ffmpeg")
-NODE_BIN = os.getenv("NODE_BIN", "node")

@@ -88,7 +88,7 @@ def run_rendering_stage(presentation: Presentation, job_dir: Path) -> Path:
     logger.info(f"[{job_dir.name}] rendering {len(presentation.slides)} HTML slides")
     HTMLRenderer().render(presentation, job_dir)
 
-    logger.info(f"[{job_dir.name}] screenshotting slides with Puppeteer ({width}x{height})")
+    logger.info(f"[{job_dir.name}] screenshotting slides ({width}x{height})")
     take_screenshots(job_dir / "slides", width=width, height=height)
 
     audio_agent = AudioAgent()

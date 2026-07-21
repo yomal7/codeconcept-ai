@@ -1,30 +1,36 @@
-import subprocess
 from pathlib import Path
 
+from playwright.sync_api import sync_playwright
+
 from backend.exceptions import RenderError
-from config.settings import NODE_BIN, PUPPETEER_SCRIPT
 
 
 def take_screenshots(slides_dir: Path, *, width: int, height: int) -> list[Path]:
     """Screenshot every slide_*.html in slides_dir to a same-named .png.
 
-    Shells out to renderer/screenshot.js, which runs a single headless
-    Chromium instance for the whole batch (via Puppeteer) rather than
-    launching one per slide.
+    Pure Python (Playwright), no Node/npm involved. Runs a single headless
+    Chromium instance for the whole batch instead of launching one per
+    slide.
     """
-    result = subprocess.run(
-        [
-            NODE_BIN,
-            str(PUPPETEER_SCRIPT),
-            "--dir", str(slides_dir),
-            "--width", str(width),
-            "--height", str(height),
-        ],
-        capture_output=True,
-        text=True,
-    )
+    html_files = sorted(slides_dir.glob("slide_*.html"))
+    if not html_files:
+        raise RenderError(f"No slide_*.html files found in {slides_dir}")
 
-    if result.returncode != 0:
-        raise RenderError(f"Puppeteer screenshot step failed:\n{result.stderr}")
+    png_paths: list[Path] = []
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            try:
+                for html_file in html_files:
+                    page = browser.new_page(viewport={"width": width, "height": height})
+                    page.goto(f"file://{html_file.resolve()}")
+                    png_path = html_file.with_suffix(".png")
+                    page.screenshot(path=str(png_path))
+                    page.close()
+                    png_paths.append(png_path)
+            finally:
+                browser.close()
+    except Exception as exc:
+        raise RenderError(f"Screenshot step failed: {exc}") from exc
 
-    return sorted(slides_dir.glob("*.png"))
+    return png_paths
