@@ -22,12 +22,20 @@ TEMPLATE_FOR_TYPE = {
 
 
 class HTMLRenderer:
-    """Presentation JSON -> one self-contained HTML file per slide.
+    """Presentation JSON -> one self-contained HTML file per slide, plus a
+    single compiled stylesheet shared by all of them.
 
     No AI involved anywhere in this file. Every slide's markup is 100%
     determined by the Slide model plus the chosen theme's CSS. Swapping
     "codeconcept" for "minimal" (or a brand-new theme) never touches this
     file or the templates -- only templates/styles/themes/<name>.css.
+
+    CSS is compiled once to slides/assets/theme.css and linked via
+    <link rel="stylesheet">, rather than inlined into every slide's
+    <style> tag. Two reasons: it's smaller (not duplicated 5x per job),
+    and template source files never contain Jinja expressions inside a
+    <style> tag or style="" attribute, which editors' CSS validators
+    otherwise flag as errors (they don't understand Jinja syntax).
     """
 
     def __init__(self):
@@ -38,23 +46,23 @@ class HTMLRenderer:
 
     def render(self, presentation: Presentation, job_dir: Path) -> list[Path]:
         slides_dir = job_dir / "slides"
-        slides_dir.mkdir(parents=True, exist_ok=True)
+        assets_dir = slides_dir / "assets"
+        assets_dir.mkdir(parents=True, exist_ok=True)
 
         width, height = resolve_dimensions(presentation.video.aspect_ratio)
-        theme_css = self._compile_theme_css(presentation.video.theme)
-        total = len(presentation.slides)
+        css = self._compile_css(presentation.video.theme, width, height)
+        (assets_dir / "theme.css").write_text(css, encoding="utf-8")
 
+        total = len(presentation.slides)
         paths = []
         for index, slide in enumerate(presentation.slides):
-            html = self._render_slide(slide, index, total, width, height, theme_css)
+            html = self._render_slide(slide, index, total)
             out_path = slides_dir / f"slide_{slide.id:03d}.html"
             out_path.write_text(html, encoding="utf-8")
             paths.append(out_path)
         return paths
 
-    def _render_slide(
-        self, slide: Slide, index: int, total: int, width: int, height: int, theme_css: str
-    ) -> str:
+    def _render_slide(self, slide: Slide, index: int, total: int) -> str:
         template_name = TEMPLATE_FOR_TYPE.get(slide.type, "layouts/bullets.html")
         template = self.env.get_template(template_name)
 
@@ -66,14 +74,12 @@ class HTMLRenderer:
             slide=slide,
             index=index,
             total_slides=total,
-            width=width,
-            height=height,
-            theme_css=theme_css,
+            css_href="assets/theme.css",
             diagram_svg=diagram_svg,
             brand_name=BRAND_NAME,
         )
 
-    def _compile_theme_css(self, theme: str) -> str:
+    def _compile_css(self, theme: str, width: int, height: int) -> str:
         styles_dir = TEMPLATES_DIR / "styles"
         tokens = (styles_dir / "tokens.css").read_text(encoding="utf-8")
         base = (styles_dir / "base.css").read_text(encoding="utf-8")
@@ -83,6 +89,11 @@ class HTMLRenderer:
             theme_file = styles_dir / "themes" / "codeconcept.css"
         theme_override = theme_file.read_text(encoding="utf-8")
 
+        # This video's own canvas size -- lives in CSS, not an inline
+        # style="" attribute in the template (see class docstring).
+        dimensions = f"body.slide {{ width: {width}px; height: {height}px; }}\n"
+
         # Order matters: tokens set defaults, theme overrides them,
-        # base.css (which only ever reads var(--token)) comes last.
-        return "\n".join([tokens, theme_override, base])
+        # base.css (which only ever reads var(--token)) comes next,
+        # dimensions last since they're the most specific to this video.
+        return "\n".join([tokens, theme_override, base, dimensions])
