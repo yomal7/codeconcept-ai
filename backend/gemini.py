@@ -86,10 +86,15 @@ class GeminiClient(LLMClient):
 
     def _strip_unsupported_fields(self, node):
         if isinstance(node, dict):
+            unsupported_keys = {
+                "additionalProperties",
+                "exclusiveMinimum",
+                "exclusiveMaximum",
+            }
             return {
                 key: self._strip_unsupported_fields(value)
                 for key, value in node.items()
-                if key != "additionalProperties"
+                if key not in unsupported_keys
             }
         if isinstance(node, list):
             return [self._strip_unsupported_fields(item) for item in node]

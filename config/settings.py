@@ -15,7 +15,9 @@ MUSIC_DIR = BASE_DIR / "music"
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
+GEMINI_PLANNER_MODEL = os.getenv("GEMINI_PLANNER_MODEL", GEMINI_MODEL)
+GEMINI_REVIEWER_MODEL = os.getenv("GEMINI_REVIEWER_MODEL", GEMINI_MODEL)
 GEMINI_TTS_MODEL = os.getenv("GEMINI_TTS_MODEL", "gemini-2.5-flash-preview-tts")
 TTS_VOICE = os.getenv("TTS_VOICE", "Kore")
 

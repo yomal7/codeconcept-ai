@@ -43,7 +43,7 @@ class Diagram(BaseModel):
 
 
 class Slide(BaseModel):
-    id: int = Field(gt=0)
+    id: int = Field(ge=1, description="Unique slide identifier, must be >= 1")
     type: SlideType
     title: str = Field(min_length=1, max_length=60)
     subtitle: str = Field(default="", max_length=80)
@@ -51,13 +51,13 @@ class Slide(BaseModel):
     narration: str = Field(min_length=20, max_length=500)
     diagram: Diagram | None = None
     animation: str = "fade"
-    duration: float = Field(gt=3, le=40, description="Duration in seconds, must be positive")
+    duration: float = Field(ge=3.0, le=40.0, description="Duration in seconds, must be between 3 and 40")
 
 
 class VideoMetadata(BaseModel):
     title: str
     description: str
-    duration: int = Field(gt=0)
+    duration: int = Field(ge=1, description="Total duration in seconds, must be >= 1")
     language: str = "en"
     theme: str = "codeconcept"
     aspect_ratio: str = "9:16"
