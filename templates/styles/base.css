@@ -23,25 +23,37 @@ body.slide {
     pointer-events: none;
 }
 
+/* Background System: Gradient -> Pattern -> Content Card -> Foreground.
+   A very faint dot grid gives the frame depth without competing with
+   the content card sitting on top of it. */
+.slide__pattern {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(color-mix(in srgb, var(--color-text) 14%, transparent) 1.5px, transparent 1.5px);
+    background-size: 36px 36px;
+    opacity: 0.35;
+    pointer-events: none;
+}
+
 .slide__brand {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
 }
 
 .slide__brand-mark {
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    font-size: var(--fs-caption);
+    font-size: var(--fs-watermark);
     color: var(--color-text-muted);
 }
 
 .slide__progress {
     display: flex;
-    gap: 10px;
+    gap: var(--space-1);
 }
 
 .slide__dot {
@@ -61,21 +73,34 @@ body.slide {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-4);
+    padding: var(--space-6);
+}
+
+/* Card System: every major content block sits inside a grounded panel
+   instead of floating directly on the background -- this is the main
+   fix for slides reading as "empty". */
+.card {
+    width: 100%;
+    max-width: 1560px;
+    background: color-mix(in srgb, var(--color-card) 88%, transparent);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-7) var(--space-6);
 }
 
 .layout {
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-4);
 }
 
 .layout--title,
 .layout--ending {
     align-items: center;
     text-align: center;
-    gap: var(--space-2);
+    gap: var(--space-3);
 }
 
 .layout--diagram {
@@ -85,12 +110,13 @@ body.slide {
 
 .title {
     font-size: var(--fs-title);
-    font-weight: 800;
+    font-weight: 600;
     line-height: 1.15;
 }
 
 .title--hero {
     font-size: var(--fs-hero);
+    font-weight: 700;
 }
 
 .subtitle {
@@ -99,38 +125,57 @@ body.slide {
     font-weight: 500;
 }
 
+/* Bullet Component: icon + text, per design.md ("✓ Runs Anywhere"),
+   not a bare CSS dot. */
 .bullets {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: var(--space-3);
 }
 
-.bullets li {
-    position: relative;
-    padding-left: 40px;
-    font-size: var(--fs-body);
-    color: var(--color-text);
+.bullet {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
     text-align: left;
 }
 
-.bullets li::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0.5em;
-    width: 14px;
-    height: 14px;
+.bullet__icon {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-top: 2px;
     border-radius: 50%;
-    background: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+    color: var(--color-accent);
+}
+
+.bullet__icon svg {
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2.5;
+}
+
+.bullet__text {
+    font-size: var(--fs-bullet);
+    font-weight: 500;
 }
 
 .bullets--hook {
     align-items: flex-start;
 }
 
-.bullets--compact li {
-    font-size: var(--fs-caption);
+.bullets--compact .bullet__text {
+    font-size: var(--fs-body);
+}
+
+.bullets--compact .bullet__icon {
+    width: 22px;
+    height: 22px;
 }
 
 .diagram {
@@ -142,18 +187,20 @@ body.slide {
 .diagram svg {
     width: 100%;
     height: auto;
-    max-height: 560px;
+    max-height: 600px;
 }
 
 .slide__watermark {
-    margin-top: var(--space-3);
-    font-size: var(--fs-caption);
+    margin-top: var(--space-4);
+    font-size: var(--fs-watermark);
+    font-weight: 300;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--color-text-muted);
 }
 
-/* SVG diagrams produced by renderer/svg_diagram.py */
+/* SVG diagrams produced by renderer/svg_diagram.py. Font sizes live
+   here, never as inline attributes on the <text> elements themselves. */
 .dg-node rect {
     fill: var(--color-surface);
     stroke: var(--color-border);
@@ -163,6 +210,7 @@ body.slide {
 .dg-node text {
     fill: var(--color-text);
     font-family: var(--font-family);
+    font-size: var(--fs-diagram-label);
 }
 
 .dg-node--accent rect {
@@ -170,33 +218,18 @@ body.slide {
     stroke-width: 3;
 }
 
+.dg-icon-badge {
+    fill: color-mix(in srgb, var(--color-accent) 16%, transparent);
+    stroke: var(--color-accent);
+    stroke-width: 1.5;
+}
+
 .dg-icon {
     fill: none;
     stroke: var(--color-accent);
-    stroke-width: 3;
+    stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
-}
-
-.dg-icon rect,
-.dg-icon path,
-.dg-icon circle,
-.dg-icon ellipse {
-    fill: none;
-}
-
-.dg-icon-dot {
-    fill: var(--color-accent);
-    stroke: none;
-}
-
-.dg-icon-stroke-only {
-    fill: none;
-    stroke: var(--color-accent-2);
-}
-
-.dg-icon-fallback {
-    fill: var(--color-border);
 }
 
 .dg-edge path {
@@ -208,6 +241,7 @@ body.slide {
 .dg-edge text {
     fill: var(--color-text-muted);
     font-family: var(--font-family);
+    font-size: var(--fs-caption);
 }
 
 .dg-edge-label-bg {
@@ -229,9 +263,11 @@ body.slide {
     fill: var(--color-bg);
     font-weight: 800;
     font-family: var(--font-family);
+    font-size: var(--fs-subtitle);
 }
 
 .dg-caption {
     fill: var(--color-text-muted);
     font-family: var(--font-family);
+    font-size: var(--fs-caption);
 }

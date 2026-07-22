@@ -1,13 +1,9 @@
 {% extends "base.html" %}
+{% from "components.html" import bullet_list, section_title with context %}
 {% block content %}
 <div class="layout layout--ending">
-    <h1 class="title title--hero">{{ slide.title }}</h1>
-    {% if slide.subtitle %}<p class="subtitle">{{ slide.subtitle }}</p>{% endif %}
-    {% if slide.bullets %}
-    <ul class="bullets bullets--hook">
-        {% for bullet in slide.bullets %}<li>{{ bullet }}</li>{% endfor %}
-    </ul>
-    {% endif %}
+    {{ section_title(slide.title, slide.subtitle, hero=True) }}
+    {{ bullet_list(slide.bullets, "bullets--hook") }}
     <div class="slide__watermark">{{ brand_name }}</div>
 </div>
 {% endblock %}

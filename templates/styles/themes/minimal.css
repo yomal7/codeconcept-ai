@@ -1,7 +1,9 @@
+/* Theme: minimal. Light, high-contrast alternative */
 :root {
     --color-bg: #ffffff;
     --color-bg-alt: #f4f6fb;
     --color-surface: #ffffff;
+    --color-card: #ffffff;
     --color-text: #101827;
     --color-text-muted: #5b6578;
     --color-accent: #2a5bd7;

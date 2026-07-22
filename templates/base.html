@@ -9,6 +9,7 @@
 
 <body class="slide slide--{{ slide.type.value }}">
     <div class="slide__bg"></div>
+    <div class="slide__pattern"></div>
     <header class="slide__brand">
         <span class="slide__brand-mark">{{ brand_name }}</span>
         <div class="slide__progress">
@@ -18,7 +19,9 @@
         </div>
     </header>
     <main class="slide__content">
-        {% block content %}{% endblock %}
+        <div class="card">
+            {% block content %}{% endblock %}
+        </div>
     </main>
 </body>
 

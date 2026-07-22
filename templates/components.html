@@ -1,0 +1,30 @@
+{#
+Shared components, imported "with context" by every layout so they can
+see the same render-context variables (e.g. check_icon) without each
+layout having to pass them explicitly. This is the reuse mechanism
+design.md's "Visual Components" section asks for -- done via Jinja's
+own macro system rather than a second, parallel component renderer,
+since Jinja already IS the templating layer in use.
+#}
+
+{% macro section_title(title, subtitle, hero=False) %}
+{% if hero %}
+<h1 class="title title--hero">{{ title }}</h1>
+{% else %}
+<h2 class="title">{{ title }}</h2>
+{% endif %}
+{% if subtitle %}<p class="subtitle">{{ subtitle }}</p>{% endif %}
+{% endmacro %}
+
+{% macro bullet_list(items, extra_class="") %}
+{% if items %}
+<ul class="bullets {{ extra_class }}">
+    {% for item in items %}
+    <li class="bullet">
+        <span class="bullet__icon">{{ check_icon|safe }}</span>
+        <span class="bullet__text">{{ item }}</span>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endmacro %}
