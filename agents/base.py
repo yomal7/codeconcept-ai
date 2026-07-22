@@ -18,6 +18,7 @@ class BaseAgent(ABC):
     """
 
     prompt_name: str
+    model_name: str | None = None
 
     def __init__(self, client: LLMClient | None = None):
         self.client = client or GeminiClient()
