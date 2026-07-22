@@ -8,12 +8,21 @@ visuals" split the rest of the pipeline follows. Two layouts:
   boxes with a VS badge between them.
 - "chain": everything else -> boxes left-to-right (wrapping to a second
   row past 4 nodes) connected by arrows following the edge list.
+
+Icons are real Lucide glyphs (renderer/icon_registry.py) shown inside a
+colored "badge" circle -- not bare line art -- for visual weight. Font
+sizes are never set inline here; every text element carries a CSS class
+(dg-node text, dg-edge text, ...) so sizing lives entirely in
+templates/styles/*.css, per the "components carry no inline styles"
+principle.
 """
 
 from backend.models import Diagram, DiagramNode
+from renderer.icon_registry import get_icon
 
 NODE_W, NODE_H = 300, 190
-ICON_SIZE = 56
+BADGE_R = 34
+ICON_SIZE = 36
 GAP = 60
 MAX_LABEL_CHARS_PER_LINE = 16
 MAX_LABEL_LINES = 3
@@ -78,7 +87,7 @@ def _render_versus(diagram: Diagram) -> str:
         _node_svg(right_node, right_x, y, accent=True),
         f"""<g class="dg-vs-badge">
             <circle cx="{badge_cx}" cy="{badge_cy}" r="42"/>
-            <text x="{badge_cx}" y="{badge_cy + 10}" text-anchor="middle" font-size="30">VS</text>
+            <text x="{badge_cx}" y="{badge_cy}" text-anchor="middle" dominant-baseline="central">VS</text>
         </g>""",
     ]
 
@@ -86,7 +95,7 @@ def _render_versus(diagram: Diagram) -> str:
     if edge and edge.label:
         parts.append(
             f"""<text x="{badge_cx}" y="{y + NODE_H + 44}" text-anchor="middle"
-                class="dg-caption" font-size="22">{_escape(edge.label)}</text>"""
+                class="dg-caption">{_escape(edge.label)}</text>"""
         )
         canvas_h += 56
 
@@ -99,18 +108,18 @@ def _render_versus(diagram: Diagram) -> str:
 def _node_svg(node: DiagramNode, x: float, y: float, *, accent: bool = False) -> str:
     css_class = "dg-node dg-node--accent" if accent else "dg-node"
     lines = _wrap_label(node.label)
-    icon = _icon_svg(node.icon, x + NODE_W / 2, y + 54)
+    icon_cx, icon_cy = x + NODE_W / 2, y + 58
 
-    text_start_y = y + 54 + ICON_SIZE / 2 + 36
+    text_start_y = icon_cy + BADGE_R + 34
     text_lines = "\n".join(
-        f'<tspan x="{x + NODE_W / 2}" dy="{0 if i == 0 else 30}">{_escape(line)}</tspan>'
+        f'<tspan x="{x + NODE_W / 2}" dy="{0 if i == 0 else 28}">{_escape(line)}</tspan>'
         for i, line in enumerate(lines)
     )
 
     return f"""<g class="{css_class}">
         <rect x="{x}" y="{y}" width="{NODE_W}" height="{NODE_H}" rx="20"/>
-        {icon}
-        <text x="{x + NODE_W / 2}" y="{text_start_y}" text-anchor="middle" font-size="24" font-weight="600">
+        {_icon_badge_svg(node.icon, icon_cx, icon_cy)}
+        <text x="{x + NODE_W / 2}" y="{text_start_y}" text-anchor="middle" font-weight="600">
             {text_lines}
         </text>
     </g>"""
@@ -129,7 +138,7 @@ def _edge_svg(start: tuple[float, float], end: tuple[float, float], label: str |
     if label:
         label_svg = (
             f'<rect x="{mid_x - 90}" y="{mid_y - 34}" width="180" height="32" rx="16" class="dg-edge-label-bg"/>'
-            f'<text x="{mid_x}" y="{mid_y - 12}" text-anchor="middle" font-size="18">{_escape(label)}</text>'
+            f'<text x="{mid_x}" y="{mid_y - 18}" text-anchor="middle" dominant-baseline="central">{_escape(label)}</text>'
         )
 
     return f"""<g class="dg-edge">
@@ -183,92 +192,12 @@ def _escape(text: str) -> str:
     )
 
 
-# ---- icon library -------------------------------------------------------
-# Small original line-art glyphs (not from any external icon set), keyed by
-# the `icon` string the Planner puts in the JSON. Unknown/missing icons
-# fall back to a circle with the label's first letter, so a new icon name
-# the Planner invents never breaks rendering.
-
-_ICONS = {
-    "desktop": lambda cx, cy: f"""
-        <rect x="{cx-26}" y="{cy-20}" width="52" height="34" rx="4"/>
-        <line x1="{cx-14}" y1="{cy+22}" x2="{cx+14}" y2="{cy+22}"/>
-        <line x1="{cx}" y1="{cy+14}" x2="{cx}" y2="{cy+22}"/>
-    """,
-    "server": lambda cx, cy: f"""
-        <rect x="{cx-24}" y="{cy-26}" width="48" height="16" rx="3"/>
-        <rect x="{cx-24}" y="{cy-6}" width="48" height="16" rx="3"/>
-        <rect x="{cx-24}" y="{cy+14}" width="48" height="16" rx="3"/>
-        <circle cx="{cx+14}" cy="{cy-18}" r="2" class="dg-icon-dot"/>
-    """,
-    "shield": lambda cx, cy: f"""
-        <path d="M {cx} {cy-28} L {cx+24} {cy-18} L {cx+24} {cy+6}
-                 C {cx+24} {cy+22} {cx+10} {cy+30} {cx} {cy+30}
-                 C {cx-10} {cy+30} {cx-24} {cy+22} {cx-24} {cy+6}
-                 L {cx-24} {cy-18} Z"/>
-        <path d="M {cx-10} {cy} L {cx-3} {cy+8} L {cx+12} {cy-10}" class="dg-icon-stroke-only"/>
-    """,
-    "doc": lambda cx, cy: f"""
-        <path d="M {cx-18} {cy-28} L {cx+8} {cy-28} L {cx+18} {cy-18} L {cx+18} {cy+28} L {cx-18} {cy+28} Z"/>
-        <path d="M {cx+8} {cy-28} L {cx+8} {cy-18} L {cx+18} {cy-18}"/>
-        <line x1="{cx-10}" y1="{cy-4}" x2="{cx+10}" y2="{cy-4}"/>
-        <line x1="{cx-10}" y1="{cy+8}" x2="{cx+10}" y2="{cy+8}"/>
-    """,
-    "cloud": lambda cx, cy: f"""
-        <path d="M {cx-24} {cy+12} a14 14 0 0 1 4 -27.4 a18 18 0 0 1 34 4.4
-                 a12 12 0 0 1 -4 26 Z"/>
-    """,
-    "database": lambda cx, cy: f"""
-        <ellipse cx="{cx}" cy="{cy-20}" rx="24" ry="9"/>
-        <path d="M {cx-24} {cy-20} L {cx-24} {cy+16} A 24 9 0 0 0 {cx+24} {cy+16} L {cx+24} {cy-20}"/>
-        <path d="M {cx-24} {cy-2} A 24 9 0 0 0 {cx+24} {cy-2}" class="dg-icon-stroke-only"/>
-    """,
-    "browser": lambda cx, cy: f"""
-        <rect x="{cx-26}" y="{cy-22}" width="52" height="44" rx="5"/>
-        <line x1="{cx-26}" y1="{cy-10}" x2="{cx+26}" y2="{cy-10}"/>
-    """,
-    "lock": lambda cx, cy: f"""
-        <rect x="{cx-18}" y="{cy-2}" width="36" height="28" rx="5"/>
-        <path d="M {cx-11} {cy-2} L {cx-11} {cy-14} A 11 11 0 0 1 {cx+11} {cy-14} L {cx+11} {cy-2}"
-              class="dg-icon-stroke-only"/>
-        <circle cx="{cx}" cy="{cy+12}" r="3" class="dg-icon-dot"/>
-    """,
-    "lock-road": lambda cx, cy: f"""
-        <rect x="{cx-16}" y="{cy-24}" width="32" height="24" rx="5"/>
-        <path d="M {cx-9} {cy-24} L {cx-9} {cy-32} A 9 9 0 0 1 {cx+9} {cy-32} L {cx+9} {cy-24}"
-              class="dg-icon-stroke-only"/>
-        <path d="M {cx-20} {cy+26} L {cx-6} {cy+2} L {cx+6} {cy+2} L {cx+20} {cy+26} Z"/>
-        <line x1="{cx}" y1="{cy+8}" x2="{cx}" y2="{cy+20}" class="dg-icon-stroke-only"/>
-    """,
-    "mobile": lambda cx, cy: f"""
-        <rect x="{cx-16}" y="{cy-28}" width="32" height="56" rx="6"/>
-        <line x1="{cx-6}" y1="{cy+20}" x2="{cx+6}" y2="{cy+20}"/>
-    """,
-    "key": lambda cx, cy: f"""
-        <circle cx="{cx-14}" cy="{cy}" r="12"/>
-        <line x1="{cx-2}" y1="{cy}" x2="{cx+24}" y2="{cy}"/>
-        <line x1="{cx+16}" y1="{cy}" x2="{cx+16}" y2="{cy+10}"/>
-        <line x1="{cx+24}" y1="{cy}" x2="{cx+24}" y2="{cy+10}"/>
-    """,
-    "road": lambda cx, cy: f"""
-        <path d="M {cx-20} {cy+28} L {cx-6} {cy-28} L {cx+6} {cy-28} L {cx+20} {cy+28} Z"/>
-        <line x1="{cx}" y1="{cy-20}" x2="{cx}" y2="{cy-6}" class="dg-icon-stroke-only"/>
-        <line x1="{cx}" y1="{cy+6}" x2="{cx}" y2="{cy+20}" class="dg-icon-stroke-only"/>
-    """,
-    "warning": lambda cx, cy: f"""
-        <path d="M {cx} {cy-26} L {cx+24} {cy+20} L {cx-24} {cy+20} Z"/>
-        <line x1="{cx}" y1="{cy-6}" x2="{cx}" y2="{cy+6}" class="dg-icon-stroke-only"/>
-        <circle cx="{cx}" cy="{cy+13}" r="2" class="dg-icon-dot"/>
-    """,
-    "check": lambda cx, cy: f"""
-        <circle cx="{cx}" cy="{cy}" r="26"/>
-        <path d="M {cx-12} {cy} L {cx-2} {cy+10} L {cx+14} {cy-10}" class="dg-icon-stroke-only"/>
-    """,
-}
-
-
-def _icon_svg(icon_name: str | None, cx: float, cy: float) -> str:
-    builder = _ICONS.get((icon_name or "").lower())
-    if builder is None:
-        return f"""<circle cx="{cx}" cy="{cy}" r="26" class="dg-icon-fallback"/>"""
-    return f'<g class="dg-icon">{builder(cx, cy)}</g>'
+def _icon_badge_svg(icon_name: str | None, cx: float, cy: float) -> str:
+    """A real Lucide icon centered inside a soft colored badge circle."""
+    inner = get_icon(icon_name)
+    half = ICON_SIZE / 2
+    scale = ICON_SIZE / 24  # Lucide icons are natively drawn on a 24x24 grid
+    return f"""<g>
+        <circle cx="{cx}" cy="{cy}" r="{BADGE_R}" class="dg-icon-badge"/>
+        <g class="dg-icon" transform="translate({cx - half},{cy - half}) scale({scale})">{inner}</g>
+    </g>"""

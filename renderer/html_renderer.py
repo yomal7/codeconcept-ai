@@ -5,6 +5,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from backend.models import Presentation, Slide, SlideType
 from config.settings import TEMPLATES_DIR
 from renderer.dimensions import resolve_dimensions
+from renderer.icon_registry import get_icon_svg
 from renderer.svg_diagram import render_diagram_svg
 
 BRAND_NAME = "CodeConcept"
@@ -77,6 +78,7 @@ class HTMLRenderer:
             css_href="assets/theme.css",
             diagram_svg=diagram_svg,
             brand_name=BRAND_NAME,
+            check_icon=get_icon_svg("check", size=16),
         )
 
     def _compile_css(self, theme: str, width: int, height: int) -> str:
